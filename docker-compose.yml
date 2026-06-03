@@ -4,8 +4,11 @@ services:
   web:
     image: bref/php-84-fpm-dev:2
     ports: [ '8000:8000' ]
+    env_file: .env
     volumes:
       - .:/var/task:ro
+    tmpfs:
+      - /tmp
     depends_on: [ dynamodb ]
     environment:
       HANDLER: public/index.php
@@ -15,6 +18,14 @@ services:
       AWS_SECRET_ACCESS_KEY: local
       AWS_DEFAULT_REGION: us-east-1
       DYNAMODB_ENDPOINT: 'http://dynamodb:8000'
+      LAMBDA_TASK_ROOT: /var/task
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /tmp/storage/framework/views /tmp/storage/framework/cache /tmp/storage/bootstrap/cache /tmp/storage/psysh
+        chmod -R 777 /tmp/storage
+        exec /bref-entrypoint.sh
 
   dynamodb:
     image: amazon/dynamodb-local:latest

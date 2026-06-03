@@ -92,6 +92,14 @@ class DynamoDbService
         );
     }
 
+    public function deleteVote(string $voteId): void
+    {
+        $this->client->deleteItem([
+            'TableName' => $this->votesTable,
+            'Key' => $this->marshaler->marshalItem(['id' => $voteId]),
+        ]);
+    }
+
     public function getCover(string $cacheKey): ?string
     {
         $result = $this->client->getItem([
@@ -120,24 +128,57 @@ class DynamoDbService
 
     public function ensureTableExists(): void
     {
-        try {
-            $this->client->describeTable(['TableName' => $this->pollsTable]);
-        } catch (\Aws\DynamoDb\Exception\DynamoDbException $e) {
-            if ($e->getAwsErrorCode() === 'ResourceNotFoundException') {
-                $this->client->createTable([
-                    'TableName' => $this->pollsTable,
+        $this->ensureTable($this->pollsTable, [
+            'KeySchema' => [
+                ['AttributeName' => 'slug', 'KeyType' => 'HASH'],
+            ],
+            'AttributeDefinitions' => [
+                ['AttributeName' => 'slug', 'AttributeType' => 'S'],
+            ],
+        ]);
+
+        $this->ensureTable($this->votesTable, [
+            'KeySchema' => [
+                ['AttributeName' => 'id', 'KeyType' => 'HASH'],
+            ],
+            'AttributeDefinitions' => [
+                ['AttributeName' => 'id', 'AttributeType' => 'S'],
+                ['AttributeName' => 'poll_id', 'AttributeType' => 'S'],
+            ],
+            'GlobalSecondaryIndexes' => [
+                [
+                    'IndexName' => 'poll_id-index',
                     'KeySchema' => [
-                        ['AttributeName' => 'slug', 'KeyType' => 'HASH'],
+                        ['AttributeName' => 'poll_id', 'KeyType' => 'HASH'],
                     ],
-                    'AttributeDefinitions' => [
-                        ['AttributeName' => 'slug', 'AttributeType' => 'S'],
-                    ],
-                    'BillingMode' => 'PAY_PER_REQUEST',
-                ]);
-                $this->client->waitUntil('TableExists', ['TableName' => $this->pollsTable]);
-            } else {
+                    'Projection' => ['ProjectionType' => 'ALL'],
+                ],
+            ],
+        ]);
+
+        $this->ensureTable($this->coversTable, [
+            'KeySchema' => [
+                ['AttributeName' => 'cover_key', 'KeyType' => 'HASH'],
+            ],
+            'AttributeDefinitions' => [
+                ['AttributeName' => 'cover_key', 'AttributeType' => 'S'],
+            ],
+        ]);
+    }
+
+    private function ensureTable(string $tableName, array $schema): void
+    {
+        try {
+            $this->client->describeTable(['TableName' => $tableName]);
+        } catch (\Aws\DynamoDb\Exception\DynamoDbException $e) {
+            if ($e->getAwsErrorCode() !== 'ResourceNotFoundException') {
                 throw $e;
             }
+            $this->client->createTable(array_merge($schema, [
+                'TableName' => $tableName,
+                'BillingMode' => 'PAY_PER_REQUEST',
+            ]));
+            $this->client->waitUntil('TableExists', ['TableName' => $tableName]);
         }
     }
 }

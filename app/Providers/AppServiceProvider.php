@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\DynamoDbService;
 use Aws\DynamoDb\DynamoDbClient;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,11 +28,10 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        //
+        if (config('dynamodb.endpoint')) {
+            app(DynamoDbService::class)->ensureTableExists();
+        }
     }
 }
