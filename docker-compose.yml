@@ -1,0 +1,22 @@
+version: '3.5'
+
+services:
+  web:
+    image: bref/php-84-fpm-dev:2
+    ports: [ '8000:8000' ]
+    volumes:
+      - .:/var/task:ro
+    depends_on: [ dynamodb ]
+    environment:
+      HANDLER: public/index.php
+      DOCUMENT_ROOT: public
+      APP_KEY: '${APP_KEY}'
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      AWS_DEFAULT_REGION: us-east-1
+      DYNAMODB_ENDPOINT: 'http://dynamodb:8000'
+
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    ports: [ '8001:8000' ]
+    command: '-jar DynamoDBLocal.jar -inMemory'

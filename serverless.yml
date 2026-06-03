@@ -1,0 +1,117 @@
+service: movie-mercredi
+
+useDotenv: true
+
+provider:
+    name: aws
+    region: us-east-1
+    environment:
+        APP_ENV: ${env:APP_ENV}
+        APP_DEBUG: ${env:APP_DEBUG}
+        APP_KEY: ${env:APP_KEY}
+        TMDB_API_KEY: ${env:TMDB_API_KEY}
+        DYNAMODB_POLLS_TABLE: 'movie-mercredi-polls-${sls:stage}'
+        DYNAMODB_VOTES_TABLE: 'movie-mercredi-votes-${sls:stage}'
+        DYNAMODB_COVERS_TABLE: 'movie-mercredi-covers-${sls:stage}'
+    iam:
+        role:
+            statements:
+                - Effect: Allow
+                  Action:
+                      - dynamodb:GetItem
+                      - dynamodb:PutItem
+                      - dynamodb:UpdateItem
+                      - dynamodb:DeleteItem
+                      - dynamodb:Query
+                      - dynamodb:Scan
+                  Resource:
+                      - !GetAtt PollsTable.Arn
+                      - !Sub '${PollsTable.Arn}/index/*'
+                      - !GetAtt VotesTable.Arn
+                      - !Sub '${VotesTable.Arn}/index/*'
+                      - !GetAtt CoversTable.Arn
+
+package:
+    # Directories to exclude from deployment
+    patterns:
+        - '!node_modules/**'
+        - '!public/storage'
+        - '!resources/assets/**'
+        - '!storage/**'
+        - '!tests/**'
+        - '!.env'
+
+functions:
+
+    # This function runs the Laravel website/API
+    web:
+        handler: public/index.php
+        runtime: php-84-fpm
+        timeout: 28 # in seconds (API Gateway has a timeout of 29 seconds)
+        events:
+            - httpApi: '*'
+
+    # This function lets us run artisan commands in Lambda
+    artisan:
+        handler: artisan
+        runtime: php-84-console
+        timeout: 720 # in seconds
+
+plugins:
+    - ./vendor/bref/bref
+    - serverless-domain-manager
+
+custom:
+    customDomain:
+        domainName: www.moviemercredi.com
+        certificateName: www.moviemercredi.com
+        endpointType: regional
+        apiType: http
+        createRoute53Record: false
+
+resources:
+    Resources:
+        PollsTable:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                TableName: 'movie-mercredi-polls-${sls:stage}'
+                BillingMode: PAY_PER_REQUEST
+                AttributeDefinitions:
+                    - AttributeName: slug
+                      AttributeType: S
+                KeySchema:
+                    - AttributeName: slug
+                      KeyType: HASH
+
+        CoversTable:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                TableName: 'movie-mercredi-covers-${sls:stage}'
+                BillingMode: PAY_PER_REQUEST
+                AttributeDefinitions:
+                    - AttributeName: cover_key
+                      AttributeType: S
+                KeySchema:
+                    - AttributeName: cover_key
+                      KeyType: HASH
+
+        VotesTable:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                TableName: 'movie-mercredi-votes-${sls:stage}'
+                BillingMode: PAY_PER_REQUEST
+                AttributeDefinitions:
+                    - AttributeName: id
+                      AttributeType: S
+                    - AttributeName: poll_id
+                      AttributeType: S
+                KeySchema:
+                    - AttributeName: id
+                      KeyType: HASH
+                GlobalSecondaryIndexes:
+                    - IndexName: poll_id-index
+                      KeySchema:
+                          - AttributeName: poll_id
+                            KeyType: HASH
+                      Projection:
+                          ProjectionType: ALL
