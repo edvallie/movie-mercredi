@@ -35,6 +35,11 @@ class AdminController extends Controller
     {
         $request->session()->forget('admin_authenticated');
 
+        $slug = $request->input('slug');
+        if ($slug) {
+            return redirect()->route('poll.results', $slug);
+        }
+
         return redirect()->route('admin.login');
     }
 

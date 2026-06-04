@@ -11,3 +11,7 @@ provider:
 ```
 
 If a var is missing from that block, `env('SOME_VAR')` will return `null` in production even if it exists in `.env` locally.
+
+## Icons
+
+Use **Heroicons** (inline SVGs). It's the icon pack used by Laravel Breeze/Jetstream. No CDN or npm package needed — copy the SVG path directly from [heroicons.com](https://heroicons.com) and inline it. Use the outline style (`stroke-width="1.5"`) to match existing icons.
