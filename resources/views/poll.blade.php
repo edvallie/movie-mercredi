@@ -100,14 +100,39 @@
             justify-content: center;
             background: #13131b;
             border-right: 1px solid #2e2e42;
-            gap: 2px;
+            gap: 1px;
+            padding: 4px 0;
             transition: opacity 0.2s;
         }
+        .rank-action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #444;
+            padding: 2px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 0;
+            transition: color 0.15s;
+        }
+        .rank-action-btn:hover { color: #e5b000; }
         .rank-num {
             font-size: 1.05rem;
             font-weight: 800;
             color: #e5b000;
             line-height: 1;
+            cursor: text;
+            min-width: 1.4em;
+            text-align: center;
+            border-radius: 3px;
+            padding: 1px 3px;
+            outline: none;
+        }
+        .rank-num:focus {
+            background: rgba(229, 176, 0, 0.1);
+            outline: 1px solid rgba(229, 176, 0, 0.5);
         }
         .rank-points {
             font-size: 0.7rem;
@@ -281,8 +306,14 @@
                 @foreach ($poll['movies'] as $movie)
                     <div class="movie-card" data-title="{{ $movie['title'] }}">
                         <div class="movie-rank">
-                            <span class="rank-num">{{ $loop->iteration }}</span>
+                            <button type="button" class="rank-action-btn" onclick="sendCardToTop(this)" title="Send to top">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l7.5-7.5 7.5 7.5m-15 6l7.5-7.5 7.5 7.5" /></svg>
+                            </button>
+                            <span class="rank-num" contenteditable="true" spellcheck="false">{{ $loop->iteration }}</span>
                             <span class="rank-points">0 pts</span>
+                            <button type="button" class="rank-action-btn" onclick="sendCardToBottom(this)" title="Send to bottom">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 5.25l-7.5 7.5-7.5-7.5m15 6l-7.5 7.5-7.5-7.5" /></svg>
+                            </button>
                         </div>
                         <div class="movie-cover">
                             @if (!empty($movie['cover_url']))
@@ -389,7 +420,7 @@
             animation: 150,
             ghostClass: 'sortable-ghost',
             chosenClass: 'sortable-chosen',
-            filter: '.cutoff-line',
+            filter: '.cutoff-line, .rank-action-btn, .rank-num',
             preventOnFilter: false,
             onEnd: updateRanksAndPoints,
         });
@@ -397,6 +428,61 @@
         updateRanksAndPoints();
 
         document.getElementById('vote-form').addEventListener('submit', updateRanksAndPoints);
+
+        function sendCardToTop(btn) {
+            const card = btn.closest('.movie-card');
+            const first = list.querySelector('.movie-card');
+            if (first && first !== card) {
+                list.insertBefore(card, first);
+                updateRanksAndPoints();
+            }
+        }
+
+        function sendCardToBottom(btn) {
+            const card = btn.closest('.movie-card');
+            const cards = list.querySelectorAll('.movie-card');
+            const last = cards[cards.length - 1];
+            if (last && last !== card) {
+                last.after(card);
+                updateRanksAndPoints();
+            }
+        }
+
+        list.addEventListener('focusin', function(e) {
+            if (!e.target.classList.contains('rank-num')) return;
+            const range = document.createRange();
+            range.selectNodeContents(e.target);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        });
+
+        list.addEventListener('keydown', function(e) {
+            if (!e.target.classList.contains('rank-num')) return;
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.target.blur();
+            }
+        });
+
+        list.addEventListener('focusout', function(e) {
+            if (!e.target.classList.contains('rank-num')) return;
+            const card = e.target.closest('.movie-card');
+            const cards = [...list.querySelectorAll('.movie-card')];
+            const rawPos = parseInt(e.target.textContent.trim(), 10);
+            if (!isNaN(rawPos)) {
+                const targetIdx = Math.max(0, Math.min(rawPos - 1, cards.length - 1));
+                const currentIdx = cards.indexOf(card);
+                if (currentIdx !== targetIdx) {
+                    if (targetIdx < currentIdx) {
+                        list.insertBefore(card, cards[targetIdx]);
+                    } else {
+                        cards[targetIdx].after(card);
+                    }
+                }
+            }
+            updateRanksAndPoints();
+        });
 
         function copyUrl() {
             const url = document.getElementById('poll-url').textContent;
