@@ -259,7 +259,7 @@
         <header>
             <div>
                 <div class="logo">🎬 Movie Mercredi</div>
-                <h1>Pick a Movie</h1>
+                <h1>{{ !empty($poll['title']) ? $poll['title'] : 'Pick a Movie' }}</h1>
             </div>
             <div class="share-box">
                 <span>Share:</span>

@@ -54,6 +54,20 @@
             letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
         }
+        input[type="text"] {
+            width: 100%;
+            background: #0f0f13;
+            border: 1px solid #2e2e42;
+            border-radius: 8px;
+            color: #e2e2e2;
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 0.65rem 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 1.5rem;
+        }
+        input[type="text"]:focus { border-color: #e5b000; }
         textarea {
             width: 100%;
             height: 220px;
@@ -175,6 +189,16 @@
 
         <form method="POST" action="{{ route('poll.store') }}">
             @csrf
+            <label for="title">Poll Title</label>
+            <input
+                type="text"
+                id="title"
+                name="title"
+                placeholder="e.g. 6/4 Poll"
+                value="{{ old('title', $defaultTitle) }}"
+                maxlength="100"
+            >
+
             <label for="input">Paste Spreadsheet Data</label>
             <textarea
                 id="input"

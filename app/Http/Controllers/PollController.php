@@ -16,12 +16,18 @@ class PollController extends Controller
 
     public function create()
     {
-        return view('home');
+        $today = now();
+        $dayOfWeek = (int) $today->format('N'); // 1=Mon … 7=Sun
+        $daysUntilWednesday = $dayOfWeek <= 3 ? 3 - $dayOfWeek : 10 - $dayOfWeek;
+        $defaultTitle = $today->copy()->addDays($daysUntilWednesday)->format('n/j') . ' Poll';
+
+        return view('home', compact('defaultTitle'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
+            'title'           => 'nullable|string|max:100',
             'input'           => 'required|string',
             'vote_limit_mode' => 'nullable|in:half,custom',
             'max_votes'       => 'nullable|integer|min:1',
@@ -44,7 +50,8 @@ class PollController extends Controller
         }
 
         $slug = Str::random(8);
-        $this->dynamo->putPoll($slug, $movies, $maxVotes);
+        $title = trim($request->input('title', ''));
+        $this->dynamo->putPoll($slug, $movies, $maxVotes, $title);
 
         return redirect()->route('poll.show', $slug);
     }

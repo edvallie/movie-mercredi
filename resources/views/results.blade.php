@@ -165,7 +165,7 @@
         <header>
             <div>
                 <div class="logo">🎬 Movie Mercredi</div>
-                <h1>Results</h1>
+                <h1>{{ !empty($poll['title']) ? $poll['title'] : 'Results' }}</h1>
             </div>
             <a href="{{ route('admin.results', $poll['slug']) }}" class="admin-link" title="Admin">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

@@ -203,7 +203,7 @@
         <header>
             <div>
                 <div class="logo">🎬 Movie Mercredi <span class="admin-badge">ADMIN</span></div>
-                <h1>Results</h1>
+                <h1>{{ !empty($poll['title']) ? $poll['title'] : 'Results' }}</h1>
             </div>
             <form method="POST" action="{{ route('admin.logout') }}">
                 @csrf

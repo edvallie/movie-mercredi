@@ -36,16 +36,22 @@ class DynamoDbService
         $this->coversTable = config('dynamodb.tables.covers', 'movie-mercredi-covers');
     }
 
-    public function putPoll(string $slug, array $movies, int $maxVotes): void
+    public function putPoll(string $slug, array $movies, int $maxVotes, string $title = ''): void
     {
+        $item = [
+            'slug' => $slug,
+            'movies' => $movies,
+            'max_votes' => $maxVotes,
+            'created_at' => now()->toIso8601String(),
+        ];
+
+        if ($title !== '') {
+            $item['title'] = $title;
+        }
+
         $this->client->putItem([
             'TableName' => $this->pollsTable,
-            'Item' => $this->marshaler->marshalItem([
-                'slug' => $slug,
-                'movies' => $movies,
-                'max_votes' => $maxVotes,
-                'created_at' => now()->toIso8601String(),
-            ]),
+            'Item' => $this->marshaler->marshalItem($item),
         ]);
     }
 
