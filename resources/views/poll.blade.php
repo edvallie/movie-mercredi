@@ -59,6 +59,14 @@
             white-space: nowrap;
         }
         .copy-btn:hover { background: #3e3e58; color: #fff; }
+        .results-link {
+            display: inline-block;
+            font-size: 0.8rem;
+            color: #888;
+            text-decoration: none;
+            text-align: right;
+        }
+        .results-link:hover { color: #e5b000; }
         .instructions {
             color: #888;
             font-size: 0.875rem;
@@ -261,10 +269,13 @@
                 <div class="logo">🎬 Movie Mercredi</div>
                 <h1>{{ !empty($poll['title']) ? $poll['title'] : 'Pick a Movie' }}</h1>
             </div>
-            <div class="share-box">
-                <span>Share:</span>
-                <code id="poll-url">{{ url()->current() }}</code>
-                <button class="copy-btn" onclick="copyUrl()">Copy</button>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.4rem;">
+                <div class="share-box">
+                    <span>Share:</span>
+                    <code id="poll-url">{{ url()->current() }}</code>
+                    <button class="copy-btn" onclick="copyUrl()">Copy</button>
+                </div>
+                <a href="{{ route('poll.results', $poll['slug']) }}" class="results-link">View Results</a>
             </div>
         </header>
 
