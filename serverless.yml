@@ -10,6 +10,8 @@ provider:
         APP_DEBUG: ${env:APP_DEBUG}
         APP_KEY: ${env:APP_KEY}
         TMDB_API_KEY: ${env:TMDB_API_KEY}
+        ADMIN_PASSWORD_HASH: ${env:ADMIN_PASSWORD_HASH}
+        LOG_CHANNEL: ${env:LOG_CHANNEL}
         DYNAMODB_POLLS_TABLE: 'movie-mercredi-polls-${sls:stage}'
         DYNAMODB_VOTES_TABLE: 'movie-mercredi-votes-${sls:stage}'
         DYNAMODB_COVERS_TABLE: 'movie-mercredi-covers-${sls:stage}'
