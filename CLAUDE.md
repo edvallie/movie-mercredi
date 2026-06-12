@@ -1,5 +1,7 @@
 # moviemercredi
 
+This is a **Laravel** app. In production it is deployed with **Bref** (via the Serverless Framework) to **AWS Lambda**, and pages are served through **API Gateway** (`httpApi` events routing all requests to the `php-fpm` runtime handling `public/index.php`; artisan commands run on a separate `console` runtime function).
+
 ## Deployment (Serverless / Lambda)
 
 `useDotenv: true` in `serverless.yml` lets Serverless Framework read `.env` locally to interpolate `${env:VAR}` references — it does **not** send the whole file to Lambda. Every env var the app needs in production must be explicitly listed under `provider.environment` in `serverless.yml`, e.g.:

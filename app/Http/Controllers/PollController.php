@@ -75,24 +75,28 @@ class PollController extends Controller
         foreach ($lines as $line) {
             $fields = explode("\t", $line);
 
-            if (count($fields) < 6) {
-                continue;
-            }
+            // Data rows have a date column (MM/DD/YYYY). The "watched" column
+            // before it is optional: with it the date is in column 1, without
+            // it the date is in column 0.
+            $datePattern = '#^\d{1,2}/\d{1,2}/\d{4}$#';
 
-            $dateAdded = trim($fields[1]);
-
-            // Data rows have a date in column 1 (MM/DD/YYYY)
-            if (!preg_match('#^\d{1,2}/\d{1,2}/\d{4}$#', $dateAdded)) {
+            if (count($fields) >= 6 && preg_match($datePattern, trim($fields[1]))) {
+                $watched = trim($fields[0]);
+                $rest = array_slice($fields, 1);
+            } elseif (count($fields) >= 5 && preg_match($datePattern, trim($fields[0]))) {
+                $watched = '';
+                $rest = $fields;
+            } else {
                 continue;
             }
 
             $movies[] = [
-                'watched'      => trim($fields[0]),
-                'date_added'   => $dateAdded,
-                'title'        => trim($fields[2]),
-                'imdb_link'    => trim($fields[3]),
-                'synopsis'     => trim($fields[4]),
-                'suggested_by' => trim($fields[5]),
+                'watched'      => $watched,
+                'date_added'   => trim($rest[0]),
+                'title'        => trim($rest[1]),
+                'imdb_link'    => trim($rest[2]),
+                'synopsis'     => trim($rest[3]),
+                'suggested_by' => trim($rest[4]),
             ];
         }
 
