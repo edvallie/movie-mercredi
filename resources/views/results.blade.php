@@ -4,11 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Movie Mercredi — Results</title>
+    @php
+        $holidayMeta = ($poll['theme'] ?? null) ? (config('holidays')[$poll['theme']] ?? null) : null;
+        $logoEmoji = $holidayMeta['emoji'] ?? '🎬';
+    @endphp
+    @include('partials.theme')
     <style>
         *, ::before, ::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background: #0f0f13;
+            background: var(--bg);
             color: #e2e2e2;
             min-height: 100vh;
             padding: 2rem 1rem;
@@ -22,7 +27,7 @@
             flex-wrap: wrap;
             gap: 1rem;
         }
-        .logo { font-size: 1.1rem; letter-spacing: 0.15em; text-transform: uppercase; color: #e5b000; font-weight: 700; }
+        .logo { font-size: 1.1rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
         h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
         .meta { color: #666; font-size: 0.9rem; margin-bottom: 2rem; }
         .meta strong { color: #aaa; }
@@ -30,16 +35,17 @@
         .score-list { display: grid; gap: 0.75rem; }
 
         .score-card {
-            background: #1a1a24;
-            border: 1px solid #2e2e42;
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: 10px;
             overflow: hidden;
             display: flex;
             align-items: stretch;
         }
-        .score-card.rank-1 { border-color: #e5b000; }
+        .score-card.rank-1 { border-color: var(--accent); }
         .score-card.rank-2 { border-color: #8888aa; }
         .score-card.rank-3 { border-color: #8b5e2e; }
+        .score-card.is-winner { border-color: var(--accent); }
 
         .score-position {
             width: 52px;
@@ -48,21 +54,22 @@
             flex-direction: row;
             align-items: center;
             justify-content: center;
-            background: #13131b;
-            border-right: 1px solid #2e2e42;
+            background: var(--rank-bg);
+            border-right: 1px solid var(--border);
             font-weight: 800;
             gap: 1px;
         }
-        .rank-1 .score-position { color: #e5b000; }
+        .rank-1 .score-position { color: var(--accent); }
         .rank-2 .score-position { color: #9999bb; }
         .rank-3 .score-position { color: #a0713a; }
+        .is-winner .score-position { color: var(--accent); }
         .score-position .pos-num { font-size: 1.2rem; }
         .score-position .pos-suffix { font-size: 0.65rem; color: inherit; opacity: 0.7; }
 
         .movie-cover {
             width: 70px;
             flex-shrink: 0;
-            background: #111118;
+            background: var(--cover-bg);
         }
         .movie-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .movie-cover-placeholder {
@@ -86,15 +93,42 @@
         }
         .movie-title { font-size: 1rem; font-weight: 700; color: #fff; }
         .movie-title a { color: inherit; text-decoration: none; }
-        .movie-title a:hover { color: #e5b000; }
+        .movie-title a:hover { color: var(--accent); }
 
-        .score-points { font-size: 1rem; font-weight: 700; color: #e5b000; white-space: nowrap; flex-shrink: 0; }
+        .score-points { font-size: 1rem; font-weight: 700; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
         .score-points .pts-label { font-size: 0.72rem; color: #666; font-weight: 400; margin-left: 3px; }
 
         .score-bar-wrap { margin-top: 0.5rem; background: #0f0f13; border-radius: 3px; height: 4px; overflow: hidden; }
-        .score-bar { height: 100%; border-radius: 3px; background: #e5b000; transition: width 0.4s ease; }
+        .score-bar { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.4s ease; }
         .rank-2 .score-bar { background: #9999bb; }
         .rank-3 .score-bar { background: #a0713a; }
+        .is-winner .score-bar { background: var(--accent); }
+
+        .badge-winner {
+            background: color-mix(in srgb, var(--accent) 18%, transparent);
+            color: var(--accent);
+            border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+        .winners-cutoff {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.35rem 0.25rem;
+        }
+        .winners-cutoff::before, .winners-cutoff::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border), transparent);
+        }
+        .winners-cutoff span {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            white-space: nowrap;
+        }
 
         .score-meta { margin-top: 0.4rem; color: #555; font-size: 0.78rem; }
 
@@ -136,7 +170,7 @@
             font-weight: 600;
         }
         .history-table td { color: #777; }
-        .history-table td.pos-1 { color: #e5b000; font-weight: 700; }
+        .history-table td.pos-1 { color: var(--accent); font-weight: 700; }
         .history-table td.pos-2 { color: #e2e2e2; }
         .history-table td.pos-3 { color: #999; }
         .history-table tbody tr:hover td { background: #1a1a24; }
@@ -148,7 +182,7 @@
             font-size: 0.8rem;
         }
         footer a { color: #666; text-decoration: none; }
-        footer a:hover { color: #e5b000; }
+        footer a:hover { color: var(--accent); }
 
         .admin-link {
             color: #2e2e42;
@@ -160,11 +194,11 @@
         .admin-link svg { width: 18px; height: 18px; }
     </style>
 </head>
-<body>
+<body @if (!empty($poll['theme'])) data-theme="{{ $poll['theme'] }}" @endif>
     <div class="container">
         <header>
-            <div>
-                <div class="logo">🎬 Movie Mercredi</div>
+            <div class="brand">
+                <div class="logo">@include('partials.brand-mark')</div>
                 <h1>{{ !empty($poll['title']) ? $poll['title'] : 'Results' }}</h1>
             </div>
             <a href="{{ route('admin.results', $poll['slug']) }}" class="admin-link" title="Admin">
@@ -177,6 +211,9 @@
         @php
             $voteCount  = count($votes);
             $maxPoints  = !empty($scores) ? $scores[0]['points'] : 1;
+            $isHoliday  = ($poll['poll_type'] ?? '') === 'holiday';
+            $isClosed   = ($poll['status'] ?? '') === 'closed';
+            $winnerCount = $isHoliday ? (int) ($poll['winner_count'] ?? 0) : 3;
         @endphp
 
         <p class="meta">
@@ -184,7 +221,37 @@
         </p>
 
         @if ($voteCount === 0)
-            <div class="no-votes">No votes yet. <a href="{{ route('poll.show', $poll['slug']) }}" style="color:#e5b000">Be the first →</a></div>
+            @if ($isClosed)
+                <div class="score-list">
+                    @foreach ($poll['movies'] as $movie)
+                        <div class="score-card">
+                            <div class="movie-cover">
+                                @if (!empty($movie['cover_url']))
+                                    <img src="{{ $movie['cover_url'] }}" alt="{{ $movie['title'] }}">
+                                @else
+                                    <div class="movie-cover-placeholder">🎬</div>
+                                @endif
+                            </div>
+                            <div class="score-body">
+                                <div class="score-header">
+                                    <div class="movie-title">
+                                        @if (!empty($movie['imdb_link']))
+                                            <a href="{{ $movie['imdb_link'] }}" target="_blank" rel="noopener">{{ $movie['title'] }}</a>
+                                        @else
+                                            {{ $movie['title'] }}
+                                        @endif
+                                    </div>
+                                </div>
+                                @if (!empty($movie['synopsis']))
+                                    <div class="score-meta">{{ $movie['synopsis'] }}</div>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="no-votes">No votes yet. <a href="{{ route('poll.show', $poll['slug']) }}" style="color:var(--accent)">Be the first →</a></div>
+            @endif
         @else
             <div class="score-list">
                 @foreach ($scores as $i => $entry)
@@ -192,9 +259,15 @@
                         $pos   = $i + 1;
                         $movie = $entry['movie'];
                         $suffix = match($pos) { 1 => 'st', 2 => 'nd', 3 => 'rd', default => 'th' };
-                        $rankClass = $pos <= 3 ? "rank-{$pos}" : '';
+                        $isWinner = $winnerCount > 0 && $pos <= $winnerCount;
+                        $rankClass = $isHoliday
+                            ? ($isWinner ? 'is-winner' : '')
+                            : ($pos <= 3 ? "rank-{$pos}" : '');
                         $barWidth = $maxPoints > 0 ? round(($entry['points'] / $maxPoints) * 100) : 0;
                     @endphp
+                    @if ($isHoliday && $pos === $winnerCount + 1)
+                        <div class="winners-cutoff"><span>Winners above</span></div>
+                    @endif
                     <div class="score-card {{ $rankClass }}">
                         <div class="score-position">
                             <span class="pos-num">{{ $pos }}</span>
@@ -230,11 +303,14 @@
                                     No first-place votes
                                 @endif
                             </div>
-                            @if (!empty($movie['watched']))
-                                <div class="badges">
+                            <div class="badges">
+                                @if ($isHoliday && $isWinner)
+                                    <span class="badge badge-winner">Winner</span>
+                                @endif
+                                @if (!empty($movie['watched']))
                                     <span class="badge badge-watched">✓ watched</span>
-                                </div>
-                            @endif
+                                @endif
+                            </div>
                         </div>
                     </div>
                 @endforeach

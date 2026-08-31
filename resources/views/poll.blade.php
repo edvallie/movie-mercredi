@@ -4,11 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Movie Mercredi — Vote</title>
+    @php
+        $holidayMeta = ($poll['theme'] ?? null) ? (config('holidays')[$poll['theme']] ?? null) : null;
+        $logoEmoji = $holidayMeta['emoji'] ?? '🎬';
+    @endphp
+    @include('partials.theme')
     <style>
         *, ::before, ::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background: #0f0f13;
+            background: var(--bg);
             color: #e2e2e2;
             min-height: 100vh;
             padding: 2rem 1rem;
@@ -29,7 +34,7 @@
             font-size: 1.1rem;
             letter-spacing: 0.15em;
             text-transform: uppercase;
-            color: #e5b000;
+            color: var(--accent);
             font-weight: 700;
         }
         h1 {
@@ -41,15 +46,15 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            background: #1a1a24;
-            border: 1px solid #2e2e42;
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: 8px;
             padding: 0.5rem 0.75rem;
         }
         .share-box span { font-size: 0.8rem; color: #888; white-space: nowrap; }
-        .share-box code { font-family: 'Courier New', monospace; font-size: 0.8rem; color: #e5b000; word-break: break-all; }
+        .share-box code { font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--accent); word-break: break-all; }
         .copy-btn {
-            background: #2e2e42;
+            background: var(--border);
             border: none;
             border-radius: 5px;
             color: #aaa;
@@ -58,7 +63,7 @@
             cursor: pointer;
             white-space: nowrap;
         }
-        .copy-btn:hover { background: #3e3e58; color: #fff; }
+        .copy-btn:hover { background: var(--hover-border); color: #fff; }
         .results-link {
             display: inline-block;
             font-size: 0.8rem;
@@ -66,7 +71,7 @@
             text-decoration: none;
             text-align: right;
         }
-        .results-link:hover { color: #e5b000; }
+        .results-link:hover { color: var(--accent); }
         .instructions {
             color: #888;
             font-size: 0.875rem;
@@ -78,16 +83,16 @@
             font-size: 0.9rem;
             margin-bottom: 1.5rem;
             padding: 0.65rem 0.9rem;
-            background: rgba(229, 176, 0, 0.06);
-            border: 1px solid rgba(229, 176, 0, 0.2);
+            background: color-mix(in srgb, var(--accent) 8%, transparent);
+            border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
             border-radius: 8px;
         }
-        .vote-limit-note strong { color: #e5b000; }
+        .vote-limit-note strong { color: var(--accent); }
         .movie-grid { display: grid; gap: 0.75rem; }
 
         .movie-card {
-            background: #1a1a24;
-            border: 1px solid #2e2e42;
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: 10px;
             overflow: hidden;
             display: flex;
@@ -95,8 +100,9 @@
             cursor: grab;
             user-select: none;
         }
-        .movie-card:hover { border-color: #3e3e58; }
-        .movie-card.sortable-chosen { border-color: #e5b000; box-shadow: 0 0 0 2px rgba(229,176,0,0.2); cursor: grabbing; }
+        .movie-card.is-readonly { cursor: default; }
+        .movie-card:hover { border-color: var(--hover-border); }
+        .movie-card.sortable-chosen { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); cursor: grabbing; }
         .movie-card.sortable-ghost { opacity: 0.35; }
 
         .movie-rank {
@@ -106,8 +112,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: #13131b;
-            border-right: 1px solid #2e2e42;
+            background: var(--rank-bg);
+            border-right: 1px solid var(--border);
             gap: 1px;
             padding: 4px 0;
             transition: opacity 0.2s;
@@ -125,11 +131,11 @@
             line-height: 0;
             transition: color 0.15s;
         }
-        .rank-action-btn:hover { color: #e5b000; }
+        .rank-action-btn:hover { color: var(--accent); }
         .rank-num {
             font-size: 1.05rem;
             font-weight: 800;
-            color: #e5b000;
+            color: var(--accent);
             line-height: 1;
             cursor: text;
             min-width: 1.4em;
@@ -139,8 +145,8 @@
             outline: none;
         }
         .rank-num:focus {
-            background: rgba(229, 176, 0, 0.1);
-            outline: 1px solid rgba(229, 176, 0, 0.5);
+            background: color-mix(in srgb, var(--accent) 12%, transparent);
+            outline: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
         }
         .rank-points {
             font-size: 0.7rem;
@@ -177,7 +183,7 @@
         .movie-cover {
             width: 70px;
             flex-shrink: 0;
-            background: #111118;
+            background: var(--cover-bg);
         }
         .movie-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .movie-cover-placeholder {
@@ -200,7 +206,7 @@
         }
         .movie-title { font-size: 1rem; font-weight: 700; color: #fff; }
         .movie-title a { color: inherit; text-decoration: none; }
-        .movie-title a:hover { color: #e5b000; }
+        .movie-title a:hover { color: var(--accent); }
         .badges { display: flex; gap: 0.4rem; flex-wrap: wrap; flex-shrink: 0; }
         .badge {
             font-size: 0.72rem;
@@ -209,7 +215,7 @@
             font-weight: 600;
             white-space: nowrap;
         }
-        .badge-suggested { background: #2a2020; color: #e5b000; border: 1px solid #3a3020; }
+        .badge-suggested { background: #2a2020; color: var(--accent); border: 1px solid #3a3020; }
         .badge-watched   { background: #1a2a1a; color: #6ddb6d; border: 1px solid #2a3a2a; }
         .badge-added     { background: #1e1e2e; color: #8888cc; border: 1px solid #2a2a3e; }
         .badge-added.stale { background: #2a1414; color: #ff6b6b; border-color: #4a2020; }
@@ -217,8 +223,8 @@
 
         .vote-form {
             margin-top: 2rem;
-            background: #1a1a24;
-            border: 1px solid #2e2e42;
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: 10px;
             padding: 1.5rem;
             display: flex;
@@ -230,7 +236,7 @@
         .vote-form input[type="text"] {
             flex: 1;
             min-width: 160px;
-            background: #0f0f13;
+            background: var(--bg);
             border: 1px solid #3e3e58;
             border-radius: 6px;
             color: #e2e2e2;
@@ -238,19 +244,20 @@
             padding: 0.55rem 0.8rem;
             outline: none;
         }
-        .vote-form input[type="text"]:focus { border-color: #e5b000; }
+        .vote-form input[type="text"]:focus { border-color: var(--accent); }
         .vote-btn {
-            background: #e5b000;
-            color: #0f0f13;
+            background: var(--btn-bg);
+            color: var(--on-accent);
             border: none;
             border-radius: 6px;
-            font-size: 0.95rem;
-            font-weight: 700;
+            font-size: 1rem;
+            font-weight: 800;
             padding: 0.6rem 1.5rem;
             cursor: pointer;
             white-space: nowrap;
+            letter-spacing: 0.02em;
         }
-        .vote-btn:hover { background: #f5c200; }
+        .vote-btn:hover { background: var(--btn-hover); }
 
         footer {
             margin-top: 3rem;
@@ -259,14 +266,14 @@
             font-size: 0.8rem;
         }
         footer a { color: #666; text-decoration: none; }
-        footer a:hover { color: #e5b000; }
+        footer a:hover { color: var(--accent); }
     </style>
 </head>
-<body>
+<body @if (!empty($poll['theme'])) data-theme="{{ $poll['theme'] }}" @endif>
     <div class="container">
         <header>
-            <div>
-                <div class="logo">🎬 Movie Mercredi</div>
+            <div class="brand">
+                <div class="logo">@include('partials.brand-mark')</div>
                 <h1>{{ !empty($poll['title']) ? $poll['title'] : 'Pick a Movie' }}</h1>
             </div>
             <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.4rem;">
@@ -282,6 +289,7 @@
         @php
             $movieCount = count($poll['movies']);
             $maxVotes = (int) ($poll['max_votes'] ?? max(1, (int) floor($movieCount / 2)));
+            $isClosed = ($poll['status'] ?? '') === 'closed';
 
             $submitterColor = function (string $name): string {
                 $hue = hexdec(substr(md5(strtolower(trim($name))), 0, 6)) % 360;
@@ -304,10 +312,14 @@
         @endphp
 
         <p class="count">{{ $movieCount }} movies on the list</p>
-        <div class="vote-limit-note">
-            Your top <strong>{{ $maxVotes }}</strong> of {{ $movieCount }} count toward the score. Movies ranked below the cutoff award 0 points.
-        </div>
-        <p class="instructions">Drag to rank from most to least preferred, then submit your vote.</p>
+        @if ($isClosed)
+            <div class="vote-limit-note">This poll is closed. Voting is off; the list is for reference.</div>
+        @else
+            <div class="vote-limit-note">
+                Your top <strong>{{ $maxVotes }}</strong> of {{ $movieCount }} count toward the score. Movies ranked below the cutoff award 0 points.
+            </div>
+            <p class="instructions">Drag to rank from most to least preferred, then submit your vote.</p>
+        @endif
 
         <form method="POST" action="{{ route('poll.vote', $poll['slug']) }}" id="vote-form">
             @csrf
@@ -315,7 +327,8 @@
 
             <div class="movie-grid" id="movie-list" data-max-votes="{{ $maxVotes }}">
                 @foreach ($poll['movies'] as $movie)
-                    <div class="movie-card" data-title="{{ $movie['title'] }}">
+                    <div class="movie-card{{ $isClosed ? ' is-readonly' : '' }}" data-title="{{ $movie['title'] }}">
+                        @unless ($isClosed)
                         <div class="movie-rank">
                             <button type="button" class="rank-action-btn" onclick="sendCardToTop(this)" title="Send to top">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l7.5-7.5 7.5 7.5m-15 6l7.5-7.5 7.5 7.5" /></svg>
@@ -326,6 +339,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 5.25l-7.5 7.5-7.5-7.5m15 6l-7.5 7.5-7.5-7.5" /></svg>
                             </button>
                         </div>
+                        @endunless
                         <div class="movie-cover">
                             @if (!empty($movie['cover_url']))
                                 <img src="{{ $movie['cover_url'] }}" alt="{{ $movie['title'] }}">
@@ -364,6 +378,7 @@
                 @endforeach
             </div>
 
+            @unless ($isClosed)
             <div class="vote-form">
                 <label for="voter-name">Your name:</label>
                 <input
@@ -377,6 +392,7 @@
                 >
                 <button type="submit" class="vote-btn">Submit Vote</button>
             </div>
+            @endunless
 
             @if ($errors->any())
                 <p style="color:#e55; font-size:0.85rem; margin-top:0.75rem;">{{ $errors->first() }}</p>
@@ -390,6 +406,7 @@
         </footer>
     </div>
 
+    @unless ($isClosed)
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
     <script>
         const list = document.getElementById('movie-list');
@@ -495,6 +512,17 @@
             updateRanksAndPoints();
         });
 
+        function copyUrl() {
+            const url = document.getElementById('poll-url').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
+    @endunless
+    <script>
         function copyUrl() {
             const url = document.getElementById('poll-url').textContent;
             navigator.clipboard.writeText(url).then(() => {

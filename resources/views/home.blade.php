@@ -88,6 +88,7 @@
             font-size: 0.85rem;
             margin-top: 0.5rem;
         }
+        .error a { color: #ff8a8a; }
         .hint {
             color: #555;
             font-size: 0.78rem;
@@ -110,7 +111,25 @@
         .submit-btn:hover { background: #ffc20e; }
         .submit-btn:active { transform: scale(0.98); }
 
-        .vote-limit { margin-top: 1.5rem; }
+        .field-block { margin-bottom: 1.5rem; }
+        .field-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .scoring-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.75rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+        .winners-field { display: none; }
+        body.is-holiday .winners-field { display: block; }
+        .winners-field .hint { margin-top: 0.35rem; }
+        .vote-limit { margin-top: 0; flex: 1; min-width: 220px; }
         .vote-limit-row {
             display: flex;
             align-items: center;
@@ -151,8 +170,8 @@
             font-size: 0.85rem;
         }
         .custom-votes-wrap.active { display: inline-flex; }
-        .custom-votes-wrap input[type="number"] {
-            width: 70px;
+        .num-input {
+            width: 78px;
             background: #0f0f13;
             border: 1px solid #2e2e42;
             border-radius: 6px;
@@ -164,31 +183,128 @@
             font-family: inherit;
             -moz-appearance: textfield;
         }
-        .custom-votes-wrap input[type="number"]::-webkit-outer-spin-button,
-        .custom-votes-wrap input[type="number"]::-webkit-inner-spin-button {
+        .num-input::-webkit-outer-spin-button,
+        .num-input::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-        .custom-votes-wrap input[type="number"]:focus { border-color: #e5b000; }
+        .num-input:focus { border-color: #e5b000; }
         .vote-limit-help {
             color: #555;
             font-size: 0.78rem;
             margin-top: 0.5rem;
         }
+
+        .holiday-fields { display: none; }
+        .holiday-fields.active { display: block; }
+        .holiday-grid {
+            display: grid;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .holiday-year-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+        }
+        .check-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        .check-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #e5b000;
+        }
+        body.is-holiday .regular-vote-toggle { display: none; }
+        body.is-holiday .custom-votes-wrap { display: inline-flex; }
+        #vote-limit-help-holiday { display: none; }
+        body.is-holiday #vote-limit-help-regular { display: none; }
+        body.is-holiday #vote-limit-help-holiday { display: block; }
     </style>
 </head>
-<body>
+@php
+    $firstHoliday = array_key_first($holidays);
+    $existingSlug = request('exists');
+    $isHolidayForm = old('poll_type', $existingSlug ? 'holiday' : 'regular') === 'holiday';
+    $selectedTheme = old('theme', request('theme', $firstHoliday));
+    $selectedYear = old('year', request('year', $currentYear));
+    $selectedWinners = old('winner_count', 5);
+    $holidayLabels = [];
+    foreach ($holidays as $key => $holiday) {
+        $holidayLabels[$key] = $holiday['label'];
+    }
+@endphp
+<body class="{{ $isHolidayForm ? 'is-holiday' : '' }}">
     <div class="card">
         <div class="logo">🎬 Movie Mercredi</div>
         <h1>Create a Poll</h1>
         <p class="subtitle">Paste your Google Sheets movie list below. The poll link will be generated and ready to share.</p>
 
-        @if ($errors->any())
-            <div class="error" style="margin-bottom:1rem;">{{ $errors->first() }}</div>
+        @if ($errors->any() || $existingSlug)
+            <div class="error" style="margin-bottom:1rem;">
+                @if ($existingSlug)
+                    A poll for that holiday and year already exists.
+                    <a href="{{ route('poll.show', $existingSlug) }}">Open {{ str_replace('-', ' ', $existingSlug) }}</a>
+                @else
+                    {{ $errors->first() }}
+                @endif
+            </div>
         @endif
 
-        <form method="POST" action="{{ route('poll.store') }}">
+        <form method="POST" action="{{ route('poll.store') }}" id="create-form">
             @csrf
+            <input type="hidden" name="poll_type" id="poll-type" value="{{ old('poll_type', $isHolidayForm ? 'holiday' : 'regular') }}">
+            <input type="hidden" name="theme" id="theme-input" value="{{ $selectedTheme }}">
+
+            <div class="field-block">
+                <label>Poll Type</label>
+                <div class="seg-toggle" role="tablist">
+                    <button type="button" class="seg-btn poll-type-btn {{ !$isHolidayForm ? 'active' : '' }}" data-type="regular">Regular</button>
+                    <button type="button" class="seg-btn poll-type-btn {{ $isHolidayForm ? 'active' : '' }}" data-type="holiday">Holiday</button>
+                </div>
+            </div>
+
+            <div class="holiday-fields {{ $isHolidayForm ? 'active' : '' }}" id="holiday-fields">
+                <div class="holiday-grid">
+                    <div class="holiday-year-row">
+                        <div>
+                            <label>Holiday</label>
+                            <div class="seg-toggle" role="tablist">
+                                @foreach ($holidays as $key => $holiday)
+                                    <button
+                                        type="button"
+                                        class="seg-btn theme-btn {{ $selectedTheme === $key ? 'active' : '' }}"
+                                        data-theme="{{ $key }}"
+                                        data-label="{{ $holiday['label'] }}"
+                                    >{{ $holiday['emoji'] }} {{ $holiday['label'] }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div>
+                            <label for="year">Year</label>
+                            <input
+                                type="number"
+                                class="num-input"
+                                id="year"
+                                name="year"
+                                min="2015"
+                                max="{{ $currentYear + 1 }}"
+                                value="{{ $selectedYear }}"
+                            >
+                        </div>
+                    </div>
+                    <label class="check-row">
+                        <input type="checkbox" name="closed" value="1" {{ old('closed') ? 'checked' : '' }}>
+                        Past poll (close voting)
+                    </label>
+                </div>
+            </div>
+
             <label for="title">Poll Title</label>
             <input
                 type="text"
@@ -206,29 +322,47 @@
                 placeholder="Paste your tab-separated movie list here (including header row)..."
                 autofocus
             >{{ old('input') }}</textarea>
-            <p class="hint">Copy all cells from your Google Sheet (Ctrl+A, Ctrl+C) and paste here.</p>
+            <p class="hint" id="paste-hint">Copy all cells from your Google Sheet (Ctrl+A, Ctrl+C) and paste here.</p>
 
-            <div class="vote-limit">
-                <label>Max Votes Per Voter</label>
-                <div class="vote-limit-row">
-                    <div class="seg-toggle" role="tablist">
-                        <button type="button" class="seg-btn {{ old('vote_limit_mode', 'half') === 'half' ? 'active' : '' }}" data-mode="half">Half (auto)</button>
-                        <button type="button" class="seg-btn {{ old('vote_limit_mode') === 'custom' ? 'active' : '' }}" data-mode="custom">Custom</button>
-                    </div>
-                    <input type="hidden" name="vote_limit_mode" id="vote-limit-mode" value="{{ old('vote_limit_mode', 'half') }}">
-                    <div class="custom-votes-wrap {{ old('vote_limit_mode') === 'custom' ? 'active' : '' }}" id="custom-votes-wrap">
+            <div class="scoring-row">
+                <div class="winners-field">
+                    <label for="winner-count">Number of winners</label>
+                    <div class="field-row">
                         <input
                             type="number"
-                            name="max_votes"
-                            id="max-votes"
+                            class="num-input"
+                            id="winner-count"
+                            name="winner_count"
                             min="1"
-                            placeholder="3"
-                            value="{{ old('max_votes') }}"
+                            value="{{ $selectedWinners }}"
                         >
-                        <span>votes</span>
                     </div>
+                    <p class="hint">Declared winners on results</p>
                 </div>
-                <p class="vote-limit-help">How many of each voter's top-ranked movies actually award points. Movies ranked below this don't count.</p>
+                <div class="vote-limit">
+                    <label>Max Votes Per Voter</label>
+                    <div class="vote-limit-row">
+                        <div class="seg-toggle regular-vote-toggle" role="tablist">
+                            <button type="button" class="seg-btn vote-mode-btn {{ old('vote_limit_mode', 'half') === 'half' ? 'active' : '' }}" data-mode="half">Half (auto)</button>
+                            <button type="button" class="seg-btn vote-mode-btn {{ old('vote_limit_mode') === 'custom' ? 'active' : '' }}" data-mode="custom">Custom</button>
+                        </div>
+                        <input type="hidden" name="vote_limit_mode" id="vote-limit-mode" value="{{ old('vote_limit_mode', 'half') }}">
+                        <div class="custom-votes-wrap {{ old('vote_limit_mode') === 'custom' || old('poll_type') === 'holiday' ? 'active' : '' }}" id="custom-votes-wrap">
+                            <input
+                                type="number"
+                                class="num-input"
+                                name="max_votes"
+                                id="max-votes"
+                                min="1"
+                                placeholder="3"
+                                value="{{ old('max_votes', old('poll_type') === 'holiday' ? $selectedWinners : '') }}"
+                            >
+                            <span>votes</span>
+                        </div>
+                    </div>
+                    <p class="vote-limit-help" id="vote-limit-help-regular">How many of each voter's top-ranked movies actually award points. Movies ranked below this don't count.</p>
+                    <p class="vote-limit-help" id="vote-limit-help-holiday">How many of each voter's top-ranked movies actually award points. Movies ranked below this don't count.</p>
+                </div>
             </div>
 
             <button type="submit" class="submit-btn">Create Poll &rarr;</button>
@@ -237,14 +371,93 @@
 
     <script>
         (function () {
-            const btns = document.querySelectorAll('.seg-btn');
+            const holidays = @json($holidayLabels);
+            const regularDefaultTitle = @json($defaultTitle);
+            const typeInput = document.getElementById('poll-type');
+            const themeInput = document.getElementById('theme-input');
+            const holidayFields = document.getElementById('holiday-fields');
+            const titleInput = document.getElementById('title');
+            const yearInput = document.getElementById('year');
+            const winnerInput = document.getElementById('winner-count');
             const modeInput = document.getElementById('vote-limit-mode');
             const customWrap = document.getElementById('custom-votes-wrap');
             const customInput = document.getElementById('max-votes');
+            const pasteHint = document.getElementById('paste-hint');
+            const voteModeBtns = document.querySelectorAll('.vote-mode-btn');
 
-            btns.forEach(btn => {
+            let lastAutoTitle = titleInput.value;
+
+            function holidayTitle() {
+                const label = holidays[themeInput.value] || 'Holiday';
+                return label + ' ' + yearInput.value;
+            }
+
+            function syncTitle() {
+                if (typeInput.value !== 'holiday') return;
+                const next = holidayTitle();
+                if (titleInput.value === '' || titleInput.value === lastAutoTitle) {
+                    titleInput.value = next;
+                    lastAutoTitle = next;
+                }
+            }
+
+            function setType(type) {
+                typeInput.value = type;
+                document.body.classList.toggle('is-holiday', type === 'holiday');
+                holidayFields.classList.toggle('active', type === 'holiday');
+                document.querySelectorAll('.poll-type-btn').forEach(b => {
+                    b.classList.toggle('active', b.dataset.type === type);
+                });
+
+                if (type === 'holiday') {
+                    modeInput.value = 'custom';
+                    customWrap.classList.add('active');
+                    if (!customInput.value) customInput.value = winnerInput.value || '5';
+                    pasteHint.textContent = 'Copy the four columns: Movie Suggestion, imdb link, quick synopse, who suggested.';
+                    if (titleInput.value === '' || titleInput.value === regularDefaultTitle || titleInput.value === lastAutoTitle) {
+                        lastAutoTitle = holidayTitle();
+                        titleInput.value = lastAutoTitle;
+                    }
+                } else {
+                    pasteHint.textContent = 'Copy all cells from your Google Sheet (Ctrl+A, Ctrl+C) and paste here.';
+                    if (titleInput.value === lastAutoTitle) {
+                        titleInput.value = regularDefaultTitle;
+                        lastAutoTitle = regularDefaultTitle;
+                    }
+                    if (modeInput.value !== 'custom') {
+                        customWrap.classList.remove('active');
+                    }
+                }
+            }
+
+            document.querySelectorAll('.poll-type-btn').forEach(btn => {
+                btn.addEventListener('click', () => setType(btn.dataset.type));
+            });
+
+            document.querySelectorAll('.theme-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    btns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    themeInput.value = btn.dataset.theme;
+                    syncTitle();
+                });
+            });
+
+            yearInput.addEventListener('input', syncTitle);
+            yearInput.addEventListener('change', syncTitle);
+
+            winnerInput.addEventListener('input', () => {
+                if (typeInput.value === 'holiday' && (!customInput.dataset.touched || customInput.value === customInput.dataset.prevWinner)) {
+                    customInput.value = winnerInput.value;
+                }
+                customInput.dataset.prevWinner = winnerInput.value;
+            });
+            customInput.addEventListener('input', () => { customInput.dataset.touched = '1'; });
+            customInput.dataset.prevWinner = winnerInput.value;
+
+            voteModeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    voteModeBtns.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     const mode = btn.dataset.mode;
                     modeInput.value = mode;
@@ -256,6 +469,16 @@
                     }
                 });
             });
+
+            titleInput.addEventListener('input', () => {
+                lastAutoTitle = titleInput.value === holidayTitle() || titleInput.value === regularDefaultTitle
+                    ? titleInput.value
+                    : lastAutoTitle;
+            });
+
+            if (typeInput.value === 'holiday') {
+                setType('holiday');
+            }
         })();
     </script>
 </body>
