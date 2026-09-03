@@ -21,6 +21,10 @@ class VoteController extends Controller
             abort(404);
         }
 
+        if (($poll['status'] ?? '') === 'closed') {
+            return back()->withErrors(['ranking' => 'This poll is closed.']);
+        }
+
         $ranking = json_decode($request->input('ranking'), true);
         if (!is_array($ranking) || empty($ranking)) {
             return back()->withErrors(['ranking' => 'Invalid ranking submitted.']);

@@ -19,11 +19,14 @@ services:
       AWS_DEFAULT_REGION: us-east-1
       DYNAMODB_ENDPOINT: 'http://dynamodb:8000'
       LAMBDA_TASK_ROOT: /var/task
+      VIEW_COMPILED_PATH: /tmp/storage/framework/views
+      SESSION_DRIVER: file
+      SESSION_FILES: /tmp/storage/framework/sessions
     entrypoint:
       - /bin/sh
       - -c
       - |
-        mkdir -p /tmp/storage/framework/views /tmp/storage/framework/cache /tmp/storage/bootstrap/cache /tmp/storage/psysh
+        mkdir -p /tmp/storage/framework/views /tmp/storage/framework/cache /tmp/storage/framework/sessions /tmp/storage/bootstrap/cache /tmp/storage/psysh
         chmod -R 777 /tmp/storage
         exec /bref-entrypoint.sh
 

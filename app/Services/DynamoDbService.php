@@ -36,7 +36,7 @@ class DynamoDbService
         $this->coversTable = config('dynamodb.tables.covers', 'movie-mercredi-covers');
     }
 
-    public function putPoll(string $slug, array $movies, int $maxVotes, string $title = ''): void
+    public function putPoll(string $slug, array $movies, int $maxVotes, string $title = '', array $extra = []): void
     {
         $item = [
             'slug' => $slug,
@@ -47,6 +47,12 @@ class DynamoDbService
 
         if ($title !== '') {
             $item['title'] = $title;
+        }
+
+        foreach ($extra as $key => $value) {
+            if ($value !== null && $value !== '') {
+                $item[$key] = $value;
+            }
         }
 
         $this->client->putItem([
